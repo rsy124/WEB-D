@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VeriAl</title>
+    <style>
+        /* Base styles remain the same */
+        :root {
+            --bg: #dbeeff; --card: #ffffff; --btn: #93c5fd; --btn-hover: #60a5fa;
+            --text-dark: #111827; --text-light: #6b7280; --error: #b91c1c;
+            --glass: rgba(255, 255, 255, 0.75);
+            --info-bg: #ffffff; --info-border: #e5e7eb; --info-title-text: #1e3a8a;
+            --info-label-text: #172554; --error-bg: #fee2e2; --error-border: #fecaca;
+        }
+        * { box-sizing: border-box; transition: all 0.2s ease-in-out; }
+        body { margin: 0; padding: 40px 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg); color: var(--text-dark); display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        h1 { font-size: 2.2rem; font-weight: 600; margin-bottom: 6px; letter-spacing: 0.5px; color: var(--info-title-text); }
+        .tagline { font-size: 0.95rem; color: var(--text-light); margin-bottom: 30px; text-align: center; }
+        .main-card { background: var(--glass); backdrop-filter: blur(15px); border-radius: 18px; border: 1px solid rgba(255, 255, 255, 0.2); box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1); padding: 35px; width: 100%; max-width: 700px; text-align: center; }
+        .main-card:hover { transform: translateY(-2px); box-shadow: 0 12px 35px rgba(0, 0, 0, 0.12); }
+        input[type="text"], input[type="file"] { width: 100%; padding: 13px 15px; margin-bottom: 20px; border-radius: 10px; border: 1px solid #d1d5db; outline: none; background-color: #ffffff; color: var(--text-dark); font-size: 15px; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+        input:focus { border-color: var(--btn-hover); box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.3); }
+        input::file-selector-button { background-color: var(--btn); color: #fff; padding: 6px 12px; border: none; border-radius: 8px; cursor: pointer; margin-right: 10px; transition: background-color 0.2s ease; }
+        input::file-selector-button:hover { background-color: var(--btn-hover); }
+        button { padding: 12px 28px; border: none; background-color: var(--btn); color: white; font-weight: 600; font-size: 16px; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 12px rgba(147, 197, 253, 0.4); transition: all 0.25s ease; }
+        button:disabled { background-color: #94a3b8; cursor: not-allowed; box-shadow: none; transform: none; opacity: 0.6; }
+        button:hover:not(:disabled) { background-color: var(--btn-hover); transform: translateY(-2px); box-shadow: 0 6px 16px rgba(96, 165, 250, 0.5); }
+        .loader { border: 4px solid rgba(0,0,0,0.1); border-top: 4px solid var(--btn); border-radius: 50%; width: 30px; height: 30px; animation: spin 0.8s linear infinite; margin: 20px auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .footer { position: fixed; bottom: 8px; right: 12px; font-size: 10px; color: var(--text-light); font-style: italic; z-index: 100; opacity: 0.6; }
+
+        /* --- UPDATED RESULT BOX STYLES --- */
+        #result {
+            margin-top: 30px; padding: 24px; font-size: 15px;
+            background-color: var(--info-bg); border: 1px solid var(--info-border); border-radius: 12px;
+            color: var(--text-dark); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+            opacity: 0; transform: translateY(10px); animation: fadeIn 0.5s forwards;
+            text-align: left; white-space: pre-wrap; overflow-wrap: break-word; word-wrap: break-word;
+            line-height: 1.65; max-height: 550px; overflow-y: auto; overflow-x: hidden;
+        }
+        #result.error-box { background-color: var(--error-bg); border-color: var(--error-border); color: var(--error); }
+        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+        /* Structure within results */
+        .result-section {
+            margin-bottom: 8px; /* Significantly reduced space between sections */
+            padding-bottom: 0; /* Removed bottom padding */
+            border-bottom: none; /* Removed dashed separator */
+        }
+        .result-section:last-child { margin-bottom: 0; }
+        .result-title {
+            font-size: 1.15em; font-weight: 600; color: var(--info-title-text);
+            margin-bottom: 10px; /* Space below main title */
+            padding-bottom: 5px; /* Add slight space below title */
+            border-bottom: 1px solid var(--info-border); /* Add border below main title */
+        }
+        .result-title.error-title { color: var(--error); border-bottom-color: var(--error-border); }
+        .result-label {
+            font-weight: bold; color: var(--info-label-text); display: block;
+            margin-bottom: 6px; /* Space below label */
+            font-size: 0.95em; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .result-content {
+            padding-left: 0;
+            margin-bottom: 8px; /* Add small margin below content before next section */
+        }
+        .result-content.preview {
+            font-style: italic; color: #4b5563; max-height: 100px; overflow: hidden;
+            text-overflow: ellipsis; white-space: normal; border-left: 4px solid var(--info-border);
+            padding: 8px 0px 8px 12px; margin-top: 4px; background-color: #f9fafb;
+            border-radius: 0 4px 4px 0; margin-bottom: 8px; /* Ensure consistent bottom margin */
+        }
+
+        /* Ensure Explanation label has sufficient top margin */
+        .result-section.justification-section > .result-label {
+            margin-top: 5px; /* Add a bit more space above Explanation label */
+        }
+        .justification-content { padding-left: 0; margin-bottom: 8px; }
+        .justification-part { margin-bottom: 14px; margin-top: 10px; }
+        .justification-part b { display: block; margin-bottom: 8px; color: #075985; font-weight: bold; font-size: 1.0em; text-transform: uppercase; letter-spacing: 0.5px; }
+        .justification-part div { padding-left: 10px; line-height: 1.65; border-left: 2px solid #e5e7eb; /* Slightly darker border */ }
+
+        .sources-list { margin-top: 5px; }
+        .sources-list a { display: block; margin-bottom: 4px; color: #1d4ed8; text-decoration: none; word-break: break-all; font-size: 0.95em; }
+        .sources-list a:hover { text-decoration: underline; color: #1e40af; }
+
+        .error-prefix { font-weight: bold; margin-right: 5px; color: var(--error); }
+
+        @media screen and (max-width: 500px) { /* ... media query ... */
+             h1 { font-size: 1.8rem; } .main-card { padding: 25px; max-width: 100%; } #result { max-height: 450px; padding: 18px;}
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>VeriAl</h1>
+    <p class="tagline">Fact-Checking, Deepfake Detection & Document Evaluation</p>
+
+    <div class="main-card">
+        <input type="text" id="smartInput" placeholder="Enter a claim to fact-check..." />
+        <input type="file" id="fileInput" accept="image/*,application/pdf" title="Upload an image for deepfake check or PDF for evaluation" />
+        <button id="analyzeButton" onclick="processInput()">Analyze</button>
+        <div id="loader" class="loader" style="display: none;"></div>
+        <div id="result"></div>
+    </div>
+
+    <div class="footer">Created by BM</div>
+
+    <script>
+        'use strict';
+
+        // --- Element References (same as before) ---
+        const textInput = document.getElementById('smartInput');
+        const fileInput = document.getElementById('fileInput');
+        const resultBox = document.getElementById('result');
+        const loader = document.getElementById('loader');
+        const analyzeButton = document.getElementById('analyzeButton');
+
+        // --- processInput function (same as before) ---
+        async function processInput() {
+            analyzeButton.disabled = true; resultBox.style.opacity = 0; resultBox.innerHTML = "";
+            resultBox.classList.remove('error-box'); loader.style.display = "block"; resultBox.style.color = 'var(--text-dark)';
+            const text = textInput.value.trim(); const file = fileInput.files[0];
+            try {
+                let endpoint = ''; let requestBody = null; let headers = {}; let method = 'POST';
+                if (text && !file) { endpoint = "/verify"; headers = { "Content-Type": "application/json" }; requestBody = JSON.stringify({ claim: text }); }
+                else if (file && !text) {
+                    const formData = new FormData(); let fileKey = '';
+                    if (file.type.startsWith('image/')) { if (!/\.(jpe?g|png|gif|webp)$/i.test(file.name)) { throw new Error('Invalid image file type. Use JPG, PNG, GIF, or WEBP.'); } endpoint = '/detect'; fileKey = 'image'; }
+                    else if (file.type === 'application/pdf') { if (!/\.(pdf)$/i.test(file.name)) { throw new Error('Invalid file type. Please select a PDF.'); } endpoint = '/detect_pdf'; fileKey = 'pdf'; }
+                    else { throw new Error(`Unsupported file type: ${escapeHTML(file.type || 'Unknown')}. Please upload image or PDF.`); }
+                    formData.append(fileKey, file); requestBody = formData;
+                } else { if (text && file) { throw new Error("Provide only text OR a file, not both."); } else { throw new Error("Enter text OR upload an image/PDF file."); } }
+                const res = await fetch(endpoint, { method, headers, body: requestBody });
+                if (!res.ok) { let errorMsg = `Server error (${res.status})`; let errorDetail = res.statusText; try { const errorData = await res.json(); if (errorData && errorData.error) { errorDetail = errorData.error; } } catch (jsonError) {} throw new Error(`${errorMsg}: ${errorDetail}`); }
+                const data = await res.json();
+                 const isHandledErrorState = (data.type === 'evaluation' && ["Error", "N/A", "Blocked"].includes(data.score_percent));
+                 if (data.error && !isHandledErrorState) { throw new Error(`Processing error: ${data.error}`); }
+                 displayResults(data, endpoint); // Display results
+            } catch (err) { console.error("Processing Error:", err); resultBox.classList.add('error-box'); resultBox.innerHTML = `<div class="result-section"><div class="result-title error-title">Error</div><div class="result-content"><span class="error-prefix">❌</span> ${escapeHTML(err.message)}</div></div>`;
+            } finally { loader.style.display = "none"; resultBox.style.opacity = 1; analyzeButton.disabled = false; if (fileInput) { fileInput.value = null; } }
+        }
+
+        // --- displayResults function (UPDATED HTML STRUCTURE) ---
+        function displayResults(data, endpoint) {
+            let htmlContent = '';
+            resultBox.classList.remove('error-box'); resultBox.style.color = 'var(--text-dark)';
+            try {
+                if (endpoint === '/verify' || data.type === 'fact_check') {
+                     // --- Fact Check Display ---
+                    let title = "Fact Check Result"; let scoreInfo = `<div class="result-content">${data.truth_score || 'N/A'}% Likely True</div>`;
+                    let explanationHtml = `<div class="result-section"><span class="result-label">Explanation:</span><div class="result-content">${escapeHTML(data.explanation || 'No explanation provided.')}</div></div>`;
+                    let sourcesHtml = `<div class="result-section"><span class="result-label">Sources:</span><div class="result-content">None available</div></div>`;
+                    if (data.truth_score === 'Blocked' || data.truth_score === 'Error') {
+                         title = `Fact Check ${data.truth_score}`; scoreInfo = `<div class="result-content"><span class="error-prefix">${data.truth_score}:</span> ${escapeHTML(data.explanation)}</div>`;
+                         explanationHtml = ''; sourcesHtml = ''; resultBox.classList.add('error-box');
+                    } else if (data.sources && data.sources.length > 0) {
+                         sourcesHtml = `<div class="result-section"><span class="result-label">Sources:</span><div class="result-content sources-list">${data.sources.map(s => `<a href="${escapeHTML(s)}" target="_blank" rel="noopener noreferrer">${escapeHTML(s)}</a>`).join('')}</div></div>`;
+                    }
+                    htmlContent = `<div class="result-section"><div class="result-title">${title}</div><span class="result-label">Truth Score:</span>${scoreInfo}</div>${explanationHtml}${sourcesHtml}`;
+
+                } else if (endpoint === '/detect' || data.type === 'deepfake_detection') {
+                     // --- Deepfake Display ---
+                     let title = "Deepfake Detection Result"; let content = '';
+                     if (data.error) { title = "Deepfake Detection Error"; content = `<span class="error-prefix">Error:</span> ${escapeHTML(data.error)}`; resultBox.classList.add('error-box'); }
+                     else { content = `<span class="result-label">Fake Score:</span> ${data.fake_score !== undefined ? data.fake_score.toFixed(2) : 'N/A'}%<br><span class="result-label">Real Score:</span> ${data.real_score !== undefined ? data.real_score.toFixed(2) : 'N/A'}%`; }
+                     htmlContent = `<div class="result-section"><div class="result-title">${title}</div><div class="result-content">${content}</div></div>`;
+
+                } else if (endpoint === '/detect_pdf' && data.type === 'evaluation') {
+                    // --- PDF Evaluation Display ---
+                    let title = "Document Evaluation"; let scoreDisplay = 'N/A'; let justificationHtml = formatJustification(data.justification || 'No explanation provided.'); let isErrorState = false;
+                    if (data.score_percent === 'Blocked'){ title = "Evaluation Blocked"; scoreDisplay = `Blocked by Safety Filter`; isErrorState = true; justificationHtml = `<span class="error-prefix">Blocked:</span> ${escapeHTML(data.justification)}`; }
+                    else if (data.score_percent === 'Error'){ title = "Evaluation Error"; scoreDisplay = `Evaluation Error`; isErrorState = true; justificationHtml = `<span class="error-prefix">Error:</span> ${escapeHTML(data.justification)}`; }
+                    else if (data.score_percent === 'N/A') { scoreDisplay = 'N/A'; if (!data.justification || !data.justification.toLowerCase().includes("no text")) { isErrorState = true; title="Evaluation Note"; } }
+                    else if (data.score_percent !== undefined) { scoreDisplay = `${data.score_percent}%`; }
+
+                    // Build HTML structure section by section
+                    htmlContent = `<div class="result-section"><div class="result-title">${title}</div></div>`; // Title Section
+                    if (data.preview) { htmlContent += `<div class="result-section"><span class="result-label">Extracted Text Preview:</span><div class="result-content preview">${escapeHTML(data.preview)}</div></div>`; } // Preview Section
+                    htmlContent += `<div class="result-section"><span class="result-label">Overall Quality & Trustworthy Score:</span><div class="result-content">${scoreDisplay}</div></div>`; // Score Section
+                    htmlContent += `<div class="result-section justification-section"><span class="result-label">Explanation:</span><div class="justification-content">${justificationHtml}</div></div>`; // Explanation Section
+                    htmlContent += `<div class="result-section"> <div style="font-size: 0.8em; color: var(--text-light); border-top: 1px solid var(--info-border); padding-top: 10px; margin-top: 10px;"> Disclaimer: AI-generated evaluation based on predefined criteria. Not a substitute for expert human review. </div> </div>`; // Disclaimer Section
+
+                    if (isErrorState) { resultBox.classList.add('error-box'); }
+                }
+                else { // --- Fallback ---
+                     console.warn("Received unexpected successful data structure:", data); htmlContent = "<div class='result-section'><div class='result-title error-title'>Error</div><div class='result-content'><span class='error-prefix'>❌</span> Received unexpected data from the server.</div></div>"; resultBox.classList.add('error-box');
+                }
+            } catch (displayError) { // --- Catch Display Errors ---
+                 console.error("Error formatting display:", displayError); resultBox.classList.add('error-box'); htmlContent = "<div class='result-section'><div class='result-title error-title'>Display Error</div><div class='result-content'><span class='error-prefix'>❌</span> Could not display results properly.</div></div>";
+            }
+             resultBox.innerHTML = htmlContent;
+        }
+
+        // --- Helper Functions (escapeHTML, formatJustification - same as before) ---
+        function escapeHTML(str) { if (typeof str !== 'string') return ''; const div = document.createElement('div'); div.textContent = str; return div.innerHTML; }
+        function formatJustification(text) {
+             let strengthsPart = ''; let weaknessesPart = ''; let otherPart = text; const strengthMarker = text.match(/^(Strengths:)/im); const weaknessMarker = text.match(/^(Weaknesses:|Limitations:)/im);
+             if (strengthMarker && weaknessMarker) { const strengthIndex = strengthMarker.index; const weaknessIndex = weaknessMarker.index; if (strengthIndex < weaknessIndex) { strengthsPart = text.substring(strengthIndex + strengthMarker[0].length, weaknessIndex).trim(); weaknessesPart = text.substring(weaknessIndex + weaknessMarker[0].length).trim(); otherPart = text.substring(0, strengthIndex).trim(); } else { weaknessesPart = text.substring(weaknessIndex + weaknessMarker[0].length, strengthIndex).trim(); strengthsPart = text.substring(strengthIndex + strengthMarker[0].length).trim(); otherPart = text.substring(0, weaknessIndex).trim(); } }
+             else if (strengthMarker) { strengthsPart = text.substring(strengthMarker.index + strengthMarker[0].length).trim(); otherPart = text.substring(0, strengthMarker.index).trim(); }
+             else if (weaknessMarker) { weaknessesPart = text.substring(weaknessMarker.index + weaknessMarker[0].length).trim(); otherPart = text.substring(0, weaknessMarker.index).trim(); }
+             const formatPart = (part) => { if (!part) return ''; let escaped = escapeHTML(part); escaped = escaped.replace(/\n\s*\n+/g, '<br><br>'); escaped = escaped.replace(/\n/g, '<br>'); return escaped; };
+             let formattedHtml = formatPart(otherPart);
+             if (strengthsPart) { formattedHtml += `<div class="justification-part"><b>Strengths:</b><div>${formatPart(strengthsPart)}</div></div>`; }
+             if (weaknessesPart) { formattedHtml += `<div class="justification-part"><b>Weaknesses:</b><div>${formatPart(weaknessesPart)}</div></div>`; }
+             if (!strengthsPart && !weaknessesPart && !otherPart && text) { formattedHtml = formatPart(text); } else if (!strengthsPart && !weaknessesPart && otherPart) { formattedHtml = formatPart(otherPart); }
+             return formattedHtml || 'No justification provided.';
+        }
+    </script>
+
+</body>
+</html>
