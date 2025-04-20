@@ -198,4 +198,4 @@ if __name__ == "__main__":
     # Use Waitress or Gunicorn for production, Flask dev server is for development
     print("Starting Flask development server...")
     # Listen on all interfaces (0.0.0.0) if you need to access it from other devices on network
-    app.run(debug=False, host='0.0.0.0', port=5000) # Set debug=False for production!
+    app.run(debug=True, host='0.0.0.0', port=5000) # Set debug=False for production!
