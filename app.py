@@ -116,7 +116,7 @@ def deepfake_detect():
 
 
 # PDF Processing API (Evaluation)
-@app.route("/detect_pdf", methods=["POST"])
+@app.route("/", methods=["GET", "POST", "HEAD", "OPTIONS"])
 def detect_pdf():
     # Check if the 'pdf' file part is in the request
     if "pdf" not in request.files:
