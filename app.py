@@ -20,7 +20,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 # --- Routes ---
 
 # Home Route - Serves Frontend
-@app.route("/")
+@app.route("/", methods=["GET", "POST", "HEAD","OPTIONS"])
 def home():
     # Renders the main HTML page from the 'templates' folder
     return render_template("index.html")
@@ -116,7 +116,7 @@ def deepfake_detect():
 
 
 # PDF Processing API (Evaluation)
-@app.route("/", methods=["GET", "POST", "HEAD", "OPTIONS"])
+@app.route("/evaluate", methods=["POST"])
 def detect_pdf():
     # Check if the 'pdf' file part is in the request
     if "pdf" not in request.files:
