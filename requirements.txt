@@ -1,0 +1,7 @@
+flask
+werkzeug
+pdfminer.six
+google-generativeai
+torch
+transformers
+Pillow
