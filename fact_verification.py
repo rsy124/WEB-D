@@ -280,3 +280,92 @@ def evaluate_research_paper(text):
     except Exception as e:
         print(f"Error during Gemini API call in evaluate_research_paper: {e}")
         return "Error", f"An API error occurred during paper evaluation: {str(e)}"
+        import io
+from pdfminer.high_level import extract_text
+
+def verify_document(file_path):
+    """
+    Verify the authenticity of a document by analyzing its content using Gemini AI.
+    Returns a dict with 'verification_status' and 'details'.
+    """
+    if not llm_model:
+        return {
+            "verification_status": "Error",
+            "details": "LLM model is not configured or failed to load."
+        }
+
+    try:
+        # Step 1: Extract text from the PDF
+        if not os.path.exists(file_path):
+            return {
+                "verification_status": "Error",
+                "details": "Document file not found on server."
+            }
+
+        document_text = extract_text(file_path)
+
+        if not document_text.strip():
+            return {
+                "verification_status": "Error",
+                "details": "No extractable text found in the document."
+            }
+
+        # Truncate if the document is too long
+        MAX_INPUT_CHARS = 25000
+        truncated = False
+        if len(document_text) > MAX_INPUT_CHARS:
+            document_text = document_text[:MAX_INPUT_CHARS]
+            truncated = True
+
+        # Step 2: Prompt Gemini AI for analysis
+        prompt = f"""
+        Act as a document authenticity analyst. Given the text of a document below, analyze if it appears to be legitimate or potentially fake.
+
+        Look for signs like:
+        - Presence of official-sounding titles, headers, and formatting
+        - Logical structure and consistent language
+        - Absence of strange or suspicious claims
+        - Presence of plausible data, names, dates, etc.
+
+        Respond in this format:
+        Verification Status: [Likely Genuine / Possibly Fake / Inconclusive]
+        Details: [Brief explanation of why you think the document is genuine or fake]
+
+        {'Note: The document text was truncated due to length limit.' if truncated else ''}
+
+        --- START DOCUMENT TEXT ---
+        {document_text}
+        --- END DOCUMENT TEXT ---
+        """
+
+        generation_config = genai.types.GenerationConfig(
+            temperature=0.2
+        )
+
+        response = llm_model.generate_content(prompt, generation_config=generation_config)
+
+        if not response.candidates or not response.text:
+            return {
+                "verification_status": "Inconclusive",
+                "details": "The AI model could not analyze the document content."
+            }
+
+        result_text = response.text.strip()
+
+        status_match = re.search(r"^Verification Status:\s*(.*)", result_text, re.IGNORECASE | re.MULTILINE)
+        details_match = re.search(r"^Details:\s*(.*)", result_text, re.IGNORECASE | re.DOTALL | re.MULTILINE)
+
+        status = status_match.group(1).strip() if status_match else "Inconclusive"
+        details = details_match.group(1).strip() if details_match else "No explanation provided."
+
+        return {
+            "verification_status": status,
+            "details": details
+        }
+
+    except Exception as e:
+        print(f"Error in verify_document: {e}")
+        return {
+            "verification_status": "Error",
+            "details": f"An unexpected error occurred: {str(e)}"
+        }
